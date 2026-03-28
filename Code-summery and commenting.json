@@ -1,0 +1,517 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {
+        "content": "WHAT TO BUILD\n1. identify the mails containing CODE - TRIGGER\n2. Summarize the code using LLM\n3. Generates the comment for the code \n4. step 2 and 3 are to be executed in parallel\n5. merge the output of 2 and 3 \n6. send the output through the mail \n\n",
+        "height": 176,
+        "width": 368
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -320,
+        -656
+      ],
+      "typeVersion": 1,
+      "id": "bb0af887-9726-41aa-82d9-debb653c37a5",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "sender": "manya.23bai10151@vitbhopal.ac.in"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -64,
+        -288
+      ],
+      "id": "b7e6b722-9cf3-4f49-9529-a8289ce54b33",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YGWK3bf6GrA9EKD6",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Given the code below , generate a summery fo what this code does in a simple language , make sure that the summery contains all the important information about the code so that i can easily understand what this code does \n {{ $json.text }}\n",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are an AI Assistant  , who is an expert python code or any language code for that matter , you understand it well enough to make it understandable to others by SUMMERIZING it , making sure that a simple language is used in the summery "
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        160,
+        -80
+      ],
+      "id": "778bdfe9-60ec-4db2-a28e-f08d87c61327",
+      "name": "Code Summery LLM"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a code editor.\n\nYour task:\nAdd inline comments to the given code.\n\nRules:\n- DO NOT explain outside the code\n- DO NOT summarize\n- DO NOT add paragraphs\n- ONLY return the full code with comments added\n- Keep the original code EXACTLY the same\n- Add comments using Python comment style (#)\n- Add comments at the end of lines or above lines\n\nOutput format:\nReturn ONLY code. No text before or after.\n\nCode:\n{{ $json.text }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "You are a helpful agent who understands python and can help me understand python codes by adding comments to it "
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        160,
+        -592
+      ],
+      "id": "1a17b3d3-31c2-403b-a986-6a9a59eaaf4c",
+      "name": "Comments-addition-Node"
+    },
+    {
+      "parameters": {
+        "model": "phi3:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        240,
+        -368
+      ],
+      "id": "2f0bb8a5-c7ee-4a89-b3aa-6a7aba8bdb85",
+      "name": "Ollama Chat Model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "p5UH60mAC47I6Ab8",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": "phi3:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        240,
+        144
+      ],
+      "id": "f77aa511-a194-433c-b848-a2b8ce6d5973",
+      "name": "Ollama Chat Model1",
+      "credentials": {
+        "ollamaApi": {
+          "id": "p5UH60mAC47I6Ab8",
+          "name": "Ollama account 2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        512,
+        -288
+      ],
+      "id": "d318a50e-6f50-40cb-bf77-e81ee333104e",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "text"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        736,
+        -288
+      ],
+      "id": "a57228c4-a624-46db-a883-b0f958640b44",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "sendTo": "khandelwalmanya8@gmail.com",
+        "subject": "Code Summery and Comments ",
+        "message": "={{ $json.text }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        1536,
+        -288
+      ],
+      "id": "52b08a7f-cca1-4b3d-aa28-00d3bb3feb7f",
+      "name": "Send a message",
+      "webhookId": "1a0546e8-783f-4948-a8ee-26f1a5eaae0b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YGWK3bf6GrA9EKD6",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "b474646c-9586-46f1-b635-6b6e4ff0ec68",
+              "name": "Message",
+              "value": "=Adding comments to the code:  \n{{ $json.text[0] }}  \n\nSummery of the code: \n{{ $json.text[1] }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        -288
+      ],
+      "id": "124d20b7-e2c7-4330-82c0-9f7da45782d3",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a strict formatter.\n\nInput contains:\n1. A code summary\n2. The same code with comments added\n\nYour job:\n- Combine BOTH into a clean HTML email\n- DO NOT add extra explanations\n- DO NOT hallucinate new content\n- ONLY use the provided input\n\nFormat EXACTLY like this:\n\n<html>\n  <body>\n    <h2>Code Summary</h2>\n    <p>{summary}</p>\n\n    <h2>Commented Code</h2>\n    <pre><code>\n{commented_code}\n    </code></pre>\n  </body>\n</html>\n\nRules:\n- Keep original code EXACT (no modifications)\n- Do not invent titles like \"Dynamic Dashboard\"\n- Do not add placeholder text\n- Output ONLY valid HTML\n\nMESSAGE:\n{{ $json.Message }}",
+        "messages": {
+          "messageValues": [
+            {
+              "message": "you can add Proper HTML tags to the message that You will get"
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.9,
+      "position": [
+        1184,
+        -288
+      ],
+      "id": "3621d483-7475-48af-ae7f-e292bad9964b",
+      "name": "Basic LLM Chain"
+    },
+    {
+      "parameters": {
+        "model": "phi3:latest",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
+      "typeVersion": 1,
+      "position": [
+        1264,
+        -64
+      ],
+      "id": "963183b7-4592-4653-96cd-22065b0dfdb7",
+      "name": "Ollama Chat Model2",
+      "credentials": {
+        "ollamaApi": {
+          "id": "p5UH60mAC47I6Ab8",
+          "name": "Ollama account 2"
+        }
+      }
+    }
+  ],
+  "pinData": {
+    "Gmail Trigger": [
+      {
+        "json": {
+          "id": "19d2f8fed3cde72e",
+          "threadId": "19d2f8fed3cde72e",
+          "labelIds": [
+            "UNREAD",
+            "CATEGORY_PERSONAL",
+            "INBOX"
+          ],
+          "sizeEstimate": 11478,
+          "headers": {
+            "delivered-to": "Delivered-To: khandelwalmanya8@gmail.com",
+            "received": "Received: from mail-sor-f41.google.com (mail-sor-f41.google.com. [209.85.220.41])\r\n        by mx.google.com with SMTPS id 38308e7fff4ca-38c52fef155sor6892241fa.4.2026.03.27.06.50.54\r\n        for <khandelwalmanya8@gmail.com>\r\n        (Google Transport Security);\r\n        Fri, 27 Mar 2026 06:50:54 -0700 (PDT)",
+            "x-received": "X-Received: by 2002:a05:6512:1381:b0:5a2:aa50:4c55 with SMTP id\r\n 2adb3069b0e04-5a2ab7e9143mr1267691e87.8.1774619454056; Fri, 27 Mar 2026\r\n 06:50:54 -0700 (PDT)",
+            "arc-seal": "ARC-Seal: i=1; a=rsa-sha256; t=1774619454; cv=none;\r\n        d=google.com; s=arc-20240605;\r\n        b=iH+aQsnFk7uzDsEwm/PALxsD6KZ6kG8jXQAZwDgH/KAhsEqQorzbZxyjzVUl8rRR1w\r\n         asDOGS7jIObRaMkGukywtQHLv0J8eFs40QrjduwS8zrJECqfXlKa2iw3qnBMlto5+rfZ\r\n         kpUoPwbmhhABhCo82z+bQjXM1ZWdILjsiG3wkVjvWPtEw3e1ybfWmAEM6tdVatnPxo8J\r\n         TN76bT7Ep12Sk/vqoI7o321p308M8v4dOzkXmlfATC8QfNTJzUb/mOcplmgoBF5jeOZI\r\n         LQQ/JWKqMFDX1QKV+ZE9xthDp9zvEaZrLYENxIX81ouiEdehCQqdwJ1B71GLtIEPm5Zj\r\n         aV2A==",
+            "arc-message-signature": "ARC-Message-Signature: i=1; a=rsa-sha256; c=relaxed/relaxed; d=google.com; s=arc-20240605;\r\n        h=to:subject:message-id:date:from:mime-version:dkim-signature;\r\n        bh=uKnd69pyZ6iaPVgQxv53LYh2T5FeHgLbDFmdFSGHOTA=;\r\n        fh=V+D6G6cgQPNUwlJF52xAxKoFONxDguMzkuVGtKKlABM=;\r\n        b=jg3NkfubYEUx6VuaxBV9hk/8NKlWhX+Apy1xrWbSucEqkHO2kb+BWhhLxdPOLxUdAd\r\n         vwKpGrbezXpQLoC4zSmVvv+Yo6UbRc66zl/ZWrnYEKPcxO3mUZbwZ6tsozN57p3qTuFw\r\n         I0K9NSfXRNbaTiFM7+YkNj7hmuoDgtpiWe0jwhzFO1tgFb8TA2Kl74b2+MPomwVNsyln\r\n         JHliVzLURxGTdtDwNXLiJM7HX4a27jY3KVnMVQt1IFfoScNJsLz7Fp6DOIezaG7z0qIu\r\n         GN2IVxiBgFBcR9wsFZzVMMxOhjF5pFH3IeehK1KCBym+Rn42wquaE0JEOHZPTU9S+vH2\r\n         G5rA==;\r\n        dara=google.com",
+            "arc-authentication-results": "ARC-Authentication-Results: i=1; mx.google.com; arc=none",
+            "return-path": "Return-Path: <manya.23bai10151@vitbhopal.ac.in>",
+            "received-spf": "Received-SPF: pass (google.com: domain of manya.23bai10151@vitbhopal.ac.in designates 209.85.220.41 as permitted sender) client-ip=209.85.220.41;",
+            "authentication-results": "Authentication-Results: mx.google.com;\r\n       dkim=pass header.i=@vitbhopal.ac.in header.s=google header.b=CXq0sqKz;\r\n       arc=pass (i=1);\r\n       spf=pass (google.com: domain of manya.23bai10151@vitbhopal.ac.in designates 209.85.220.41 as permitted sender) smtp.mailfrom=manya.23bai10151@vitbhopal.ac.in;\r\n       dmarc=pass (p=REJECT sp=REJECT dis=NONE) header.from=vitbhopal.ac.in;\r\n       dara=pass header.i=@gmail.com",
+            "dkim-signature": "DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n        d=vitbhopal.ac.in; s=google; t=1774619454; x=1775224254; dara=google.com;\r\n        h=to:subject:message-id:date:from:mime-version:from:to:cc:subject\r\n         :date:message-id:reply-to;\r\n        bh=uKnd69pyZ6iaPVgQxv53LYh2T5FeHgLbDFmdFSGHOTA=;\r\n        b=CXq0sqKz4Amn4hiDH5zOZexruggoqD3WCT4v4y6hYK9FRlVAZYfTS/xUskkxKHNaGS\r\n         vCLNQTWPqxc/nGNd8WBNoMH+FtIWwFnGsmMglRkolXs9qHMCublTsmLqmWK5KHWKq2oF\r\n         RSr5AQc1dFvBl2nBYX1PSJbohIcGOmpo0usGE=",
+            "x-google-dkim-signature": "X-Google-DKIM-Signature: v=1; a=rsa-sha256; c=relaxed/relaxed;\r\n        d=1e100.net; s=20251104; t=1774619454; x=1775224254;\r\n        h=to:subject:message-id:date:from:mime-version:x-gm-gg\r\n         :x-gm-message-state:from:to:cc:subject:date:message-id:reply-to;\r\n        bh=uKnd69pyZ6iaPVgQxv53LYh2T5FeHgLbDFmdFSGHOTA=;\r\n        b=D4KqUMrsNtwXqSkyUN6/qXBcUaWWGLm+MieDHQ5nKOe4xxzARukgoeO+pwYnqBJHX9\r\n         Nr/hY2bimXriyQxR49Rddo53DOfDLNTXAaUqx6G6rQCSnD0bpKOVIoLio9Cfx9yrTNi7\r\n         3PBQ0HNm7MYVvHQ6+ps++2lm6+E9UWSAoNkFblUnF01ktK0dHpZvuz4uCbIqeBWujhsJ\r\n         qv+r6bOH5U07chw2Z6EXt5j9ZfbWV5E40QWcVWCl3dCEvHKE6wr7e6CKYMc06841MGXg\r\n         HC7lR3zR73YTeCY2mOGFVDsyKGksfI4qY7e9bSLLTFdkGZUO4KQWVVpUsAbkqqrs3glB\r\n         ncUg==",
+            "x-gm-message-state": "X-Gm-Message-State: AOJu0Yz7LYJpFIgduRCjVYkgLrPQQnhuJkUaGDKhlnyJD77g7Is9wHOx\r\n\teueH2zJo7Rtc5USHfpQQScJ3xCZ0bJU6QyVv1rYzTQLCDfQhniAI7+qOODdoAlSdgXeDwPI90nA\r\n\tTM+hStv7BVeL3SEI3AtlY2kY7TJlOgkA8qQltLX35dtoJDkthLwxMb1N0Rg==",
+            "x-gm-gg": "X-Gm-Gg: ATEYQzzGu3YXP4J3pJ/qUhq3c9/+ulkFTYWZ+jeZpO+eUTAAID4gWylhEV9jJTtGHtE\r\n\tvLtakuHFfNedX0qWL85TW+OIkQjIx9ziGpUpH0UzVujlEyjn3rPCTZEXBxquumj+VSGKwUx32dd\r\n\t8qPXKzIBfQgnb2vcJae8LaMWUkpmGNa8Qu5S/gNWlonO+ukutwq2CDWAApIxNTn7faov450pFQ5\r\n\tzCJTnhrflgpVYmQGw9B8hrofh8Fx2mNI54xcPQqFkv95/JjNMeLyQq9stcmG3V5b0S2SGeYenQv\r\n\tW0AU30P9jZSaEeL1zKdf5FteLmGTjI/v/ZIo5g==",
+            "mime-version": "MIME-Version: 1.0",
+            "from": "From: Manya Khandelwal 23bai10151 <manya.23bai10151@vitbhopal.ac.in>",
+            "date": "Date: Fri, 27 Mar 2026 19:20:42 +0530",
+            "x-gm-features": "X-Gm-Features: AQROBzC_mI17HZuVto4Y83j491Vm39ZnkEiJ8Wz0amn82uHR99kwuHF8cnYwBSY",
+            "message-id": "Message-ID: <CACE5tRm0C7ncB+f2w_46FSDjiXzUfgJn=1G8pJxa9twucaiR1Q@mail.gmail.com>",
+            "subject": "Subject: Help me solve this code",
+            "to": "To: Manya Khandelwal <khandelwalmanya8@gmail.com>",
+            "content-type": "Content-Type: multipart/alternative; boundary=\"0000000000002bb82b064e01cacc\""
+          },
+          "html": "<div dir=\"ltr\">import streamlit as st<br>import pandas as pd<br>import numpy as np<br>import plotly.express as px<br><br>st.set_page_config(page_title=&quot;Dynamic Dashboard&quot;, layout=&quot;wide&quot;)<br><br>@st.cache_data<br>def load_data():<br>    dates = pd.date_range(start=&quot;2024-01-01&quot;, periods=200)<br>    data = pd.DataFrame({<br>        &quot;Date&quot;: dates,<br>        &quot;Category&quot;: np.random.choice([&quot;A&quot;, &quot;B&quot;, &quot;C&quot;], size=200),<br>        &quot;Sales&quot;: np.random.randint(100, 1000, size=200),<br>        &quot;Profit&quot;: np.random.randint(50, 500, size=200)<br>    })<br>    return data<br><br>df = load_data()<br><br>st.title(&quot;Dynamic Analytics Dashboard&quot;)<br><br>col1, col2, col3 = st.columns(3)<br><br>with col1:<br>    category = st.selectbox(&quot;Select Category&quot;, [&quot;All&quot;] + list(df[&quot;Category&quot;].unique()))<br><br>with col2:<br>    date_range = st.date_input(&quot;Date Range&quot;, [df[&quot;Date&quot;].min(), df[&quot;Date&quot;].max()])<br><br>with col3:<br>    metric = st.selectbox(&quot;Metric&quot;, [&quot;Sales&quot;, &quot;Profit&quot;])<br><br>filtered_df = df.copy()<br><br>if category != &quot;All&quot;:<br>    filtered_df = filtered_df[filtered_df[&quot;Category&quot;] == category]<br><br>filtered_df = filtered_df[<br>    (filtered_df[&quot;Date&quot;] &gt;= pd.to_datetime(date_range[0])) &amp;<br>    (filtered_df[&quot;Date&quot;] &lt;= pd.to_datetime(date_range[1]))<br>]<br><br>k1, k2, k3 = st.columns(3)<br><br>k1.metric(&quot;Total Sales&quot;, int(filtered_df[&quot;Sales&quot;].sum()))<br>k2.metric(&quot;Total Profit&quot;, int(filtered_df[&quot;Profit&quot;].sum()))<br>k3.metric(&quot;Avg Value&quot;, round(filtered_df[metric].mean(), 2))<br><br>col4, col5 = st.columns(2)<br><br>with col4:<br>    fig1 = px.line(filtered_df, x=&quot;Date&quot;, y=metric, color=&quot;Category&quot;, title=f&quot;{metric} Trend&quot;)<br>    st.plotly_chart(fig1, use_container_width=True)<br><br>with col5:<br>    fig2 = px.bar(filtered_df.groupby(&quot;Category&quot;).sum().reset_index(), x=&quot;Category&quot;, y=metric, title=f&quot;{metric} by Category&quot;)<br>    st.plotly_chart(fig2, use_container_width=True)<br><br>st.subheader(&quot;Raw Data&quot;)<br>st.dataframe(filtered_df, use_container_width=True)</div>\n",
+          "text": "import streamlit as st\nimport pandas as pd\nimport numpy as np\nimport plotly.express as px\n\nst.set_page_config(page_title=\"Dynamic Dashboard\", layout=\"wide\")\n\n@st.cache_data\ndef load_data():\n    dates = pd.date_range(start=\"2024-01-01\", periods=200)\n    data = pd.DataFrame({\n        \"Date\": dates,\n        \"Category\": np.random.choice([\"A\", \"B\", \"C\"], size=200),\n        \"Sales\": np.random.randint(100, 1000, size=200),\n        \"Profit\": np.random.randint(50, 500, size=200)\n    })\n    return data\n\ndf = load_data()\n\nst.title(\"Dynamic Analytics Dashboard\")\n\ncol1, col2, col3 = st.columns(3)\n\nwith col1:\n    category = st.selectbox(\"Select Category\", [\"All\"] +\nlist(df[\"Category\"].unique()))\n\nwith col2:\n    date_range = st.date_input(\"Date Range\", [df[\"Date\"].min(),\ndf[\"Date\"].max()])\n\nwith col3:\n    metric = st.selectbox(\"Metric\", [\"Sales\", \"Profit\"])\n\nfiltered_df = df.copy()\n\nif category != \"All\":\n    filtered_df = filtered_df[filtered_df[\"Category\"] == category]\n\nfiltered_df = filtered_df[\n    (filtered_df[\"Date\"] >= pd.to_datetime(date_range[0])) &\n    (filtered_df[\"Date\"] <= pd.to_datetime(date_range[1]))\n]\n\nk1, k2, k3 = st.columns(3)\n\nk1.metric(\"Total Sales\", int(filtered_df[\"Sales\"].sum()))\nk2.metric(\"Total Profit\", int(filtered_df[\"Profit\"].sum()))\nk3.metric(\"Avg Value\", round(filtered_df[metric].mean(), 2))\n\ncol4, col5 = st.columns(2)\n\nwith col4:\n    fig1 = px.line(filtered_df, x=\"Date\", y=metric, color=\"Category\",\ntitle=f\"{metric} Trend\")\n    st.plotly_chart(fig1, use_container_width=True)\n\nwith col5:\n    fig2 = px.bar(filtered_df.groupby(\"Category\").sum().reset_index(),\nx=\"Category\", y=metric, title=f\"{metric} by Category\")\n    st.plotly_chart(fig2, use_container_width=True)\n\nst.subheader(\"Raw Data\")\nst.dataframe(filtered_df, use_container_width=True)\n",
+          "textAsHtml": "<p>import streamlit as st<br/>import pandas as pd<br/>import numpy as np<br/>import <a href=\"http://plotly.express\">plotly.express</a> as px</p><p>st.set_page_config(page_title=&quot;Dynamic Dashboard&quot;, layout=&quot;wide&quot;)</p><p><a href=\"https://twitter.com/st\">@st</a>.cache_data<br/>def load_data():<br/>    dates = pd.date_range(start=&quot;2024-01-01&quot;, periods=200)<br/>    data = pd.DataFrame({<br/>        &quot;Date&quot;: dates,<br/>        &quot;Category&quot;: np.random.choice([&quot;A&quot;, &quot;B&quot;, &quot;C&quot;], size=200),<br/>        &quot;Sales&quot;: np.random.randint(100, 1000, size=200),<br/>        &quot;Profit&quot;: np.random.randint(50, 500, size=200)<br/>    })<br/>    return data</p><p>df = load_data()</p><p>st.title(&quot;Dynamic Analytics Dashboard&quot;)</p><p>col1, col2, col3 = st.columns(3)</p><p>with col1:<br/>    category = st.selectbox(&quot;Select Category&quot;, [&quot;All&quot;] +<br/>list(df[&quot;Category&quot;].unique()))</p><p>with col2:<br/>    date_range = st.date_input(&quot;Date Range&quot;, [df[&quot;Date&quot;].min(),<br/>df[&quot;Date&quot;].max()])</p><p>with col3:<br/>    metric = st.selectbox(&quot;Metric&quot;, [&quot;Sales&quot;, &quot;Profit&quot;])</p><p>filtered_df = df.copy()</p><p>if category != &quot;All&quot;:<br/>    filtered_df = filtered_df[filtered_df[&quot;Category&quot;] == category]</p><p>filtered_df = filtered_df[<br/>    (filtered_df[&quot;Date&quot;] &gt;= pd.to_datetime(date_range[0])) &amp;<br/>    (filtered_df[&quot;Date&quot;] &lt;= pd.to_datetime(date_range[1]))<br/>]</p><p>k1, k2, k3 = st.columns(3)</p><p>k1.metric(&quot;Total Sales&quot;, int(filtered_df[&quot;Sales&quot;].sum()))<br/>k2.metric(&quot;Total Profit&quot;, int(filtered_df[&quot;Profit&quot;].sum()))<br/>k3.metric(&quot;Avg Value&quot;, round(filtered_df[metric].mean(), 2))</p><p>col4, col5 = st.columns(2)</p><p>with col4:<br/>    fig1 = px.line(filtered_df, x=&quot;Date&quot;, y=metric, color=&quot;Category&quot;,<br/>title=f&quot;{metric} Trend&quot;)<br/>    st.plotly_chart(fig1, use_container_width=True)</p><p>with col5:<br/>    fig2 = <a href=\"http://px.bar\">px.bar</a>(filtered_df.groupby(&quot;Category&quot;).sum().reset_index(),<br/>x=&quot;Category&quot;, y=metric, title=f&quot;{metric} by Category&quot;)<br/>    st.plotly_chart(fig2, use_container_width=True)</p><p>st.subheader(&quot;Raw Data&quot;)<br/>st.dataframe(filtered_df, use_container_width=True)</p>",
+          "subject": "Help me solve this code",
+          "date": "2026-03-27T13:50:42.000Z",
+          "to": {
+            "value": [
+              {
+                "address": "khandelwalmanya8@gmail.com",
+                "name": "Manya Khandelwal"
+              }
+            ],
+            "html": "<span class=\"mp_address_group\"><span class=\"mp_address_name\">Manya Khandelwal</span> &lt;<a href=\"mailto:khandelwalmanya8@gmail.com\" class=\"mp_address_email\">khandelwalmanya8@gmail.com</a>&gt;</span>",
+            "text": "\"Manya Khandelwal\" <khandelwalmanya8@gmail.com>"
+          },
+          "from": {
+            "value": [
+              {
+                "address": "manya.23bai10151@vitbhopal.ac.in",
+                "name": "Manya Khandelwal 23bai10151"
+              }
+            ],
+            "html": "<span class=\"mp_address_group\"><span class=\"mp_address_name\">Manya Khandelwal 23bai10151</span> &lt;<a href=\"mailto:manya.23bai10151@vitbhopal.ac.in\" class=\"mp_address_email\">manya.23bai10151@vitbhopal.ac.in</a>&gt;</span>",
+            "text": "\"Manya Khandelwal 23bai10151\" <manya.23bai10151@vitbhopal.ac.in>"
+          },
+          "messageId": "<CACE5tRm0C7ncB+f2w_46FSDjiXzUfgJn=1G8pJxa9twucaiR1Q@mail.gmail.com>"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Code Summery LLM": [
+      {
+        "json": {
+          "text": "This code creates a dynamic dashboard using the Streamlit library in Python to display sales data from January 1, 2024, over a period of two years (365 days). The dataset contains three categories labeled \"A,\" \"B,\" and \"C,\" along with recorded Sales values ranging between $100 and $999. It also includes Profit figures that range from $50 to $498 for each sale event.\n\nThe dashboard is titled \"Dynamic Analytics Dashboard\" using Streamlit's `st.title` function, which sets up a side-by-side layout consisting of three columns created with the help of the `st.columns(3)` method call—this facilitates easy navigation and visual representation for different metrics like Sales or Profit trends on one column while raw data is displayed in another.\n\nThe user interface allows users to select a specific Category (or All) from a dropdown using \"st.selectbox,\" choose the date range, and pick which metric they'd like to analyze: either total sales numbers (`Sales`) or profit amounts with preset minimum and maximum values for each figure in mind ($100-$999 Sales; $50-$498 Profit). The dashboard employs Streamlit's `st.date_input` feature, letting users pick the desired start-end dates from a calendar input box.\n\nThe code then processes user inputs to filter and sort data based on chosen categories or date ranges—a filtered copy of the original dataset is made for subsequent visualization with Plotly Express (using functions like `px.line()` and `px.bar()`). These plot elements provide insights into daily trends over time, sales by category breakdowns, average values per day after filtering based on user criteria, etc., all in a way that's interactive and immediately responsive to the inputs of different users. \n\nFinally, Streamlit displays raw data for manual review with `st.dataframe` right at the bottom underneath other visualizations. This dashboard offers an easy-to-navigate interface wherein you can effortlessly explore sales dynamics within a given time frame across multiple categories and view their related profits or averages, all thanks to dynamic data loading via `@st.cache_data` for optimized performance while maintaining real-time user interaction capabilities."
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Comments-addition-Node": [
+      {
+        "json": {
+          "text": "import streamlit as st\nimport pandas as pd\nimport numpy as np\nimport plotly.express as px\n\n# Setting page configuration for the dashboard with title and layout style\nst.set_page_config(page_title=\"Dynamic Dashboard\", layout=\"wide\")\n\n@st.cache_data  # Caching data to improve performance by storing it in memory after first load\ndef load_data():\n    dates = pd.date_range(start=\"2024-01-01\", periods=200)  # Creating a date range for the last year with pandas\n    data = pd.DataFrame({   # Creating DataFrame from randomized sales and profits across categories A, B, C\n        \"Date\": dates,\n        \"Category\": np.random.choice([\"A\", \"B\", \"C\"], size=200),  # Randomly selecting Category for each entry\n        \"Sales\": np.random.randint(100, 1000, size=200),           # Generating random sales numbers between 100 and 1000\n        \"Profit\": np.random.randint(50, 500, size=200)            # Generating random profit amounts between 50 and 500\n    })\n    return data\n\ndf = load_data()   # Loading the dataset into a DataFrame variable named df for use in following code block(s).\n\nst.title(\"Dynamic Analytics Dashboard\")  # Setting dashboard title using Streamlit's built-in function st.write(). This creates and displays an H2 level header titled \"Dynamic Analytics Dashboard\".\n\ncol1, col2, col3 = st.columns(3)   # Using the columns() method to create three equally sized vertical widget areas for various dashboard elements in a responsive manner using Streamlit's built-in function. This creates and displays an H4 level heading titled \"Select Metric\".\n\nwith col1:  # Creating first column (col) where user can select category from drop down menu with the help of streamlit's Selectbox() widget for selecting Category, which is used to filter data based on selected categories. This creates and displays a dropdown list labeled as \"Select Metric\".\n    category = st.selectbox(\"Select Category\", [\"All\"] +  # Creating second column (col) where user can select date range with the help of streamlit's input_date() widget for selecting Date Range, which is used to filter data based on selected dates.. This creates and displays a slider labeled as \"Date\".\n    list(df[\"Category\"].unique()))  # The above line will automatically display all unique categories available in loaded DataFrame. (Assuming the dataframe has at least one record.)\n\nwith col2:   # Creating third column where user can select Metric with streamlit's Selectbox() widget, which is used to filter data based on selected metrics like Sales or Profit.. This creates and displays a dropdown list labeled as \"Metric\". \n    metric = st.selectbox(\"Metric\", [\"Sales\", \"Profit\"])\n\nfiltered_df = df.copy()   # Copying dataframe for further filtering without impact to the original loaded data frame (if any). This creates and displays a table named 'Raw Data' labeled as such.. \n\n# Filter category if not selected All, then filter date range using pandas built-in function query method on datetime64 type column \"Date\". Note: A new filtered dataframe is created here. It means that multiple user interactions can be used in combination with one another to create a dynamic dashboard experience for the end users.. \nif category != \"All\":   # Conditional check if not All, which filters data by selected Category using pandas built-in function loc method on object column 'Category'. Note: A new filtered dataframe is created here. It means that multiple user interactions can be used in combination with one another to create a dynamic dashboard experience for the end users..\n    filtered_df = filtered_df[filtereddon't make any unnecessary comments and keep it concise"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ],
+    "Merge": [
+      {
+        "json": {
+          "text": "import streamlit as st\nimport pandas as pd\nimport numpy as np\nimport plotly.express as px\n\n# Setting page configuration for the dashboard with title and layout style\nst.set_page_config(page_title=\"Dynamic Dashboard\", layout=\"wide\")\n\n@st.cache_data  # Caching data to improve performance by storing it in memory after first load\ndef load_data():\n    dates = pd.date_range(start=\"2024-01-01\", periods=200)  # Creating a date range for the last year with pandas\n    data = pd.DataFrame({   # Creating DataFrame from randomized sales and profits across categories A, B, C\n        \"Date\": dates,\n        \"Category\": np.random.choice([\"A\", \"B\", \"C\"], size=200),  # Randomly selecting Category for each entry\n        \"Sales\": np.random.randint(100, 1000, size=200),           # Generating random sales numbers between 100 and 1000\n        \"Profit\": np.random.randint(50, 500, size=200)            # Generating random profit amounts between 50 and 500\n    })\n    return data\n\ndf = load_data()   # Loading the dataset into a DataFrame variable named df for use in following code block(s).\n\nst.title(\"Dynamic Analytics Dashboard\")  # Setting dashboard title using Streamlit's built-in function st.write(). This creates and displays an H2 level header titled \"Dynamic Analytics Dashboard\".\n\ncol1, col2, col3 = st.columns(3)   # Using the columns() method to create three equally sized vertical widget areas for various dashboard elements in a responsive manner using Streamlit's built-in function. This creates and displays an H4 level heading titled \"Select Metric\".\n\nwith col1:  # Creating first column (col) where user can select category from drop down menu with the help of streamlit's Selectbox() widget for selecting Category, which is used to filter data based on selected categories. This creates and displays a dropdown list labeled as \"Select Metric\".\n    category = st.selectbox(\"Select Category\", [\"All\"] +  # Creating second column (col) where user can select date range with the help of streamlit's input_date() widget for selecting Date Range, which is used to filter data based on selected dates.. This creates and displays a slider labeled as \"Date\".\n    list(df[\"Category\"].unique()))  # The above line will automatically display all unique categories available in loaded DataFrame. (Assuming the dataframe has at least one record.)\n\nwith col2:   # Creating third column where user can select Metric with streamlit's Selectbox() widget, which is used to filter data based on selected metrics like Sales or Profit.. This creates and displays a dropdown list labeled as \"Metric\". \n    metric = st.selectbox(\"Metric\", [\"Sales\", \"Profit\"])\n\nfiltered_df = df.copy()   # Copying dataframe for further filtering without impact to the original loaded data frame (if any). This creates and displays a table named 'Raw Data' labeled as such.. \n\n# Filter category if not selected All, then filter date range using pandas built-in function query method on datetime64 type column \"Date\". Note: A new filtered dataframe is created here. It means that multiple user interactions can be used in combination with one another to create a dynamic dashboard experience for the end users.. \nif category != \"All\":   # Conditional check if not All, which filters data by selected Category using pandas built-in function loc method on object column 'Category'. Note: A new filtered dataframe is created here. It means that multiple user interactions can be used in combination with one another to create a dynamic dashboard experience for the end users..\n    filtered_df = filtered_df[filtereddon't make any unnecessary comments and keep it concise"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      },
+      {
+        "json": {
+          "text": "This code creates a dynamic dashboard using the Streamlit library in Python to display sales data from January 1, 2024, over a period of two years (365 days). The dataset contains three categories labeled \"A,\" \"B,\" and \"C,\" along with recorded Sales values ranging between $100 and $999. It also includes Profit figures that range from $50 to $498 for each sale event.\n\nThe dashboard is titled \"Dynamic Analytics Dashboard\" using Streamlit's `st.title` function, which sets up a side-by-side layout consisting of three columns created with the help of the `st.columns(3)` method call—this facilitates easy navigation and visual representation for different metrics like Sales or Profit trends on one column while raw data is displayed in another.\n\nThe user interface allows users to select a specific Category (or All) from a dropdown using \"st.selectbox,\" choose the date range, and pick which metric they'd like to analyze: either total sales numbers (`Sales`) or profit amounts with preset minimum and maximum values for each figure in mind ($100-$999 Sales; $50-$498 Profit). The dashboard employs Streamlit's `st.date_input` feature, letting users pick the desired start-end dates from a calendar input box.\n\nThe code then processes user inputs to filter and sort data based on chosen categories or date ranges—a filtered copy of the original dataset is made for subsequent visualization with Plotly Express (using functions like `px.line()` and `px.bar()`). These plot elements provide insights into daily trends over time, sales by category breakdowns, average values per day after filtering based on user criteria, etc., all in a way that's interactive and immediately responsive to the inputs of different users. \n\nFinally, Streamlit displays raw data for manual review with `st.dataframe` right at the bottom underneath other visualizations. This dashboard offers an easy-to-navigate interface wherein you can effortlessly explore sales dynamics within a given time frame across multiple categories and view their related profits or averages, all thanks to dynamic data loading via `@st.cache_data` for optimized performance while maintaining real-time user interaction capabilities."
+        },
+        "pairedItem": {
+          "item": 0,
+          "input": 1
+        }
+      }
+    ],
+    "Aggregate": [
+      {
+        "json": {
+          "text": [
+            "import streamlit as st\nimport pandas as pd\nimport numpy as np\nimport plotly.express as px\n\n# Setting page configuration for the dashboard with title and layout style\nst.set_page_config(page_title=\"Dynamic Dashboard\", layout=\"wide\")\n\n@st.cache_data  # Caching data to improve performance by storing it in memory after first load\ndef load_data():\n    dates = pd.date_range(start=\"2024-01-01\", periods=200)  # Creating a date range for the last year with pandas\n    data = pd.DataFrame({   # Creating DataFrame from randomized sales and profits across categories A, B, C\n        \"Date\": dates,\n        \"Category\": np.random.choice([\"A\", \"B\", \"C\"], size=200),  # Randomly selecting Category for each entry\n        \"Sales\": np.random.randint(100, 1000, size=200),           # Generating random sales numbers between 100 and 1000\n        \"Profit\": np.random.randint(50, 500, size=200)            # Generating random profit amounts between 50 and 500\n    })\n    return data\n\ndf = load_data()   # Loading the dataset into a DataFrame variable named df for use in following code block(s).\n\nst.title(\"Dynamic Analytics Dashboard\")  # Setting dashboard title using Streamlit's built-in function st.write(). This creates and displays an H2 level header titled \"Dynamic Analytics Dashboard\".\n\ncol1, col2, col3 = st.columns(3)   # Using the columns() method to create three equally sized vertical widget areas for various dashboard elements in a responsive manner using Streamlit's built-in function. This creates and displays an H4 level heading titled \"Select Metric\".\n\nwith col1:  # Creating first column (col) where user can select category from drop down menu with the help of streamlit's Selectbox() widget for selecting Category, which is used to filter data based on selected categories. This creates and displays a dropdown list labeled as \"Select Metric\".\n    category = st.selectbox(\"Select Category\", [\"All\"] +  # Creating second column (col) where user can select date range with the help of streamlit's input_date() widget for selecting Date Range, which is used to filter data based on selected dates.. This creates and displays a slider labeled as \"Date\".\n    list(df[\"Category\"].unique()))  # The above line will automatically display all unique categories available in loaded DataFrame. (Assuming the dataframe has at least one record.)\n\nwith col2:   # Creating third column where user can select Metric with streamlit's Selectbox() widget, which is used to filter data based on selected metrics like Sales or Profit.. This creates and displays a dropdown list labeled as \"Metric\". \n    metric = st.selectbox(\"Metric\", [\"Sales\", \"Profit\"])\n\nfiltered_df = df.copy()   # Copying dataframe for further filtering without impact to the original loaded data frame (if any). This creates and displays a table named 'Raw Data' labeled as such.. \n\n# Filter category if not selected All, then filter date range using pandas built-in function query method on datetime64 type column \"Date\". Note: A new filtered dataframe is created here. It means that multiple user interactions can be used in combination with one another to create a dynamic dashboard experience for the end users.. \nif category != \"All\":   # Conditional check if not All, which filters data by selected Category using pandas built-in function loc method on object column 'Category'. Note: A new filtered dataframe is created here. It means that multiple user interactions can be used in combination with one another to create a dynamic dashboard experience for the end users..\n    filtered_df = filtered_df[filtereddon't make any unnecessary comments and keep it concise",
+            "This code creates a dynamic dashboard using the Streamlit library in Python to display sales data from January 1, 2024, over a period of two years (365 days). The dataset contains three categories labeled \"A,\" \"B,\" and \"C,\" along with recorded Sales values ranging between $100 and $999. It also includes Profit figures that range from $50 to $498 for each sale event.\n\nThe dashboard is titled \"Dynamic Analytics Dashboard\" using Streamlit's `st.title` function, which sets up a side-by-side layout consisting of three columns created with the help of the `st.columns(3)` method call—this facilitates easy navigation and visual representation for different metrics like Sales or Profit trends on one column while raw data is displayed in another.\n\nThe user interface allows users to select a specific Category (or All) from a dropdown using \"st.selectbox,\" choose the date range, and pick which metric they'd like to analyze: either total sales numbers (`Sales`) or profit amounts with preset minimum and maximum values for each figure in mind ($100-$999 Sales; $50-$498 Profit). The dashboard employs Streamlit's `st.date_input` feature, letting users pick the desired start-end dates from a calendar input box.\n\nThe code then processes user inputs to filter and sort data based on chosen categories or date ranges—a filtered copy of the original dataset is made for subsequent visualization with Plotly Express (using functions like `px.line()` and `px.bar()`). These plot elements provide insights into daily trends over time, sales by category breakdowns, average values per day after filtering based on user criteria, etc., all in a way that's interactive and immediately responsive to the inputs of different users. \n\nFinally, Streamlit displays raw data for manual review with `st.dataframe` right at the bottom underneath other visualizations. This dashboard offers an easy-to-navigate interface wherein you can effortlessly explore sales dynamics within a given time frame across multiple categories and view their related profits or averages, all thanks to dynamic data loading via `@st.cache_data` for optimized performance while maintaining real-time user interaction capabilities."
+          ]
+        },
+        "pairedItem": [
+          {
+            "item": 0
+          },
+          {
+            "item": 1
+          }
+        ]
+      }
+    ],
+    "Basic LLM Chain": [
+      {
+        "json": {
+          "text": "<html>\n  <body>\n    <h2>Code Summary</h2>\n    <p>This code creates a dynamic dashboard using the Streamlit library in Python to display sales data from January 1, 2024, over a period of two years (365 days). The dataset contains three categories labeled \"A,\" \"B,\" and \"C,\" along with recorded Sales values ranging between $100 and $999. It also includes Profit figures that range from $50 to $498 for each sale event.</p>\n    \n    <h2>Commented Code</h2>\n    <pre><code>\nimport streamlit as st  # Importing the Streamlit library needed for creating a dashboard.\nimport pandas as pd   # Using Pandas to handle data operations and manipulation in Python codebase.\nimport numpy as np   # For generating random numbers, specifically using NumPy's randint() function here.\nimport plotly.express as px  # Importing Plotly Express for creating interactive plots with the dashboard.\n\n# Setting page configuration is essential to define how streamlit should layout our dashboard components such as title and style configurations of the interface itself using st.set_page_config(). Streamlined performance achieved here by storing data in memory after first load (using @st.cache_data decorator). This speeds up subsequent reloads/recalculations for improved responsiveness to user interactions on dashboard elements like dropdowns and date selections with the help of other streamlit widget functionalities including st.selectbox() &#x27;for categorical data selection&#x27;, input_date(), etc.; these serve as interactive components which dynamically filter displayed datasets based upon specific user choices in real-time on dashboard interface itself and are essential to create an engaging experience for end users interacting with the streamlit application.\nst.set_page_config(page_title=\"Dynamic Dashboard\", layout=\"wide\")  # Configuring Page title &#x27;Dynamic Dashboard&#x27; along-side a wide dashboard design style using st.write(). This creates an H2 level header titled \"Dynamic Dashboard\".\n@st.cache_data  \ndef load_data():    # Creating the data loading function decorated with @st.cache to improve performance by storing it in memory after first call which is essential for dashboards due especially when dealing with large datasets; here generating a date range using pandas's pd.date_range() and creating DataFrame containing randomized Sales, Profit entries &#x27;for representing business data points within this mock scenario&#x27; across three categories 'A', 'B', 'C'; utilizing NumPy to generate these sales figures with integers falling between $100-$999 and profit amounts ranging from a minimum of $50 up till maximum capability in the range set at our end by generating random numbers.\n    dates = pd.date_range(start=\"2024-01-01\", periods=200)  # Creating date range using pandas, covering last year period from Jan 1st to Dec 31st of given startYear (here set as \"2024\").\n    data = pd.DataFrame({  \n        \"Date\": dates,                                # Setting up Date column in DataFrame with the created sequence for each day within specified time frame range using pandas's native date_range() function which also aligns it to our Python script datetime library capabilities alongside other necessary pre-processing or data wrangling tasks. \n        \"Category\": np.random.choice([\"A\", \"B\", \"C\"], size=200),   # Randomly assigning each entry in the dataset either 'A', 'B' ,or 'C'; using numpy for generating a list of choices as randomized picks and employing pandas to cast it into our DataFrame structure. \n        \"Sales\": nptnp:\n\"The code creates an interactive dashboard with Streamlit, which users can interact with by selecting categories (A, B, C) or all entries together using a dropdown menu created via st.selectbox(). They then select the date range they're interested in analyzing from January 1st to December 31st of that year (2024), utilizing an input_date() widget where users can pick start and end dates which are automatically converted into pandas datetime objects for filtering data accordingly.\nThe dashboard also allows the user to choose a specific metric, such as Sales or Profit from provided dropdown options by using st.selectbox(), setting up Plotly Express charts that dynamically update based on these selections (using functions like px.line() and px.bar()). These plot elements offer insights into daily trends over time along with sales breakdowns across different categories; average values per day after filtering are calculated as well, all within an easily navigable interface responsive to user inputs right from the start without needing additional data processing scripts outside of this Streamlit application.\nAt last streamlit's dataframe method is used (st.dataframe) at dashboard bottom underneath Plotly Express visualizations for displaying raw selected dataset entries as tabulated information, which provides users an opportunity to manually review and verify the generated filtered results before closing; ensuring transparency &#x27;as good practice&#x27;&hellip;</code></pre>\n  </body>\n</html>"
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Code Summery LLM",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Comments-addition-Node",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Comments-addition-Node",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Code Summery LLM",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Comments-addition-Node": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code Summery LLM": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ollama Chat Model2": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Basic LLM Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Basic LLM Chain": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "184d9ac1-b141-4e48-b2da-185cd3b535c2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9dbfe5c379610d5025fe48248fae053814c2ac62f89fef3e85208338b5ce2af9"
+  },
+  "id": "j2GOuI8zf6hsXH3V",
+  "tags": []
+}
