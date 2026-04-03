@@ -1,0 +1,357 @@
+{
+  "name": "GitHub-Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 21
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -192,
+        -64
+      ],
+      "id": "dfe3af42-6a4d-445e-8fa5-ea5cb73fbfff",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "content": "GITHUB DIGEST \n1. Hit the github API to fetch your public repo + recent commits / push \n2. filters only the activity of the last 1 week\n3. formats a clean summery \n4. send the summery on mail or telegram",
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -240,
+        -288
+      ],
+      "typeVersion": 1,
+      "id": "74035340-7e4b-4d38-b075-0baa808ab6c3",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "sendTo": "khandelwalmanya8@gmail.com",
+        "subject": "WEEKLY-GITHUB-DIGEST",
+        "message": "={{ $json.emailBody }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        2048,
+        -64
+      ],
+      "id": "69b060fd-95d6-4731-904a-c3fdb539bfa7",
+      "name": "Send a message",
+      "webhookId": "bd9cc33a-c986-4416-9d7e-7897442251e2",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YGWK3bf6GrA9EKD6",
+          "name": "Gmail account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => ({\n  json: {\n    repo: item.json.url ? item.json.url.split('/')[5] : \"unknown\",\n    message: item.json.commit.message,\n    date: item.json.commit.author.date,\n    author: item.json.commit.author.name\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        928,
+        -64
+      ],
+      "id": "df7e0efa-ee98-4d1e-8de4-68ff9b173e4f",
+      "name": "code to check the commit"
+    },
+    {
+      "parameters": {
+        "jsCode": "const grouped = {};\nitems.forEach(item => {\n  if (!item.json.repo) return;\n  const repo = item.json.repo;\n  if (!grouped[repo]) grouped[repo] = [];\n  grouped[repo].push(`• ${item.json.message} (${item.json.date.split('T')[0]})`);\n});\n\nconst summary = items[0].json.aiSummary || '';\nlet html = `<h2>🗓️ Weekly GitHub Digest</h2><p><b>🤖 AI Summary:</b> ${summary}</p><hr/>`;\n\nfor (const repo in grouped) {\n  html += `<h3>📁 ${repo}</h3><ul>`;\n  grouped[repo].forEach(msg => { html += `<li>${msg}</li>`; });\n  html += `</ul>`;\n}\n\nreturn [{ json: { emailBody: html } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1824,
+        -64
+      ],
+      "id": "b1a0b6a7-535b-414d-af5c-2d64691efb4a",
+      "name": "mail formatting"
+    },
+    {
+      "parameters": {
+        "jsCode": "const commitList = items.map(i => `${i.json.repo}: ${i.json.message}`).join(', ');\n\nreturn [{\n  json: {\n    prompt: `Here are my GitHub commits from this week: ${commitList}. Write a short 3-4 sentence summary of what I worked on this week, in first person.`\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1152,
+        -64
+      ],
+      "id": "5a990898-b2ba-45da-ba24-5f675d44acdf",
+      "name": "Code in JavaScript1"
+    },
+    {
+      "parameters": {
+        "jsCode": "const summary = items[0].json.choices[0].message.content;\nconst commits = $('code to check the commit').all();\n\nreturn commits.map(item => ({\n  ...item,\n  json: {\n    ...item.json,\n    aiSummary: summary\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        -64
+      ],
+      "id": "6f14d946-69ae-43c6-993e-8552d8360708",
+      "name": "Extracting Summery"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"model\": \"llama-3.3-70b-versatile\",\n  \"messages\": [\n    {\n      \"role\": \"user\",\n      \"content\": \"={{ $json.prompt }}\"\n    }\n  ]\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1376,
+        -64
+      ],
+      "id": "8de1c9e8-fd21-436c-be3a-08599c7a1e39",
+      "name": "Groq-HTTP request",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "Mr1amzsRaQ4SRYQy",
+          "name": "Bearer Auth account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "https://api.github.com/users/Manya-kh10/repos",
+        "authentication": "genericCredentialType",
+        "genericAuthType": "httpBearerAuth",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        32,
+        -64
+      ],
+      "id": "3068aebc-bbd6-4021-ad76-eb31b0e7289f",
+      "name": "Fetch from github",
+      "credentials": {
+        "httpBearerAuth": {
+          "id": "9dxYT5gF89JivgRF",
+          "name": "Bearer Auth account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "7328cec6-cd99-47d7-9079-bc840e98c635",
+              "leftValue": "={{ $json.pushed_at }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "looseTypeValidation": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        256,
+        -64
+      ],
+      "id": "08bfc5ad-d2ca-404a-a22f-eaf255a1f425",
+      "name": "Checking for the right commits"
+    },
+    {
+      "parameters": {
+        "jsCode": "const cutoff = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);\n\nreturn items.filter(item => new Date(item.json.pushed_at) > cutoff);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        -64
+      ],
+      "id": "5d01630f-cb00-4220-8e3f-a2a36fae13e1",
+      "name": "checking for the commits of last week"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.github.com/repos/Manya-kh10/{{ $json.name }}/commits",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        704,
+        -64
+      ],
+      "id": "187aeaf1-391e-4b04-a916-3b747c5d845c",
+      "name": "Extracting Commits"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetch from github",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "code to check the commit": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "mail formatting": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript1": {
+      "main": [
+        [
+          {
+            "node": "Groq-HTTP request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extracting Summery": {
+      "main": [
+        [
+          {
+            "node": "mail formatting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq-HTTP request": {
+      "main": [
+        [
+          {
+            "node": "Extracting Summery",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch from github": {
+      "main": [
+        [
+          {
+            "node": "Checking for the right commits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Checking for the right commits": {
+      "main": [
+        [
+          {
+            "node": "checking for the commits of last week",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "checking for the commits of last week": {
+      "main": [
+        [
+          {
+            "node": "Extracting Commits",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extracting Commits": {
+      "main": [
+        [
+          {
+            "node": "code to check the commit",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "0032441d-7d9b-471d-b3b7-4795201c89aa",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9dbfe5c379610d5025fe48248fae053814c2ac62f89fef3e85208338b5ce2af9"
+  },
+  "id": "6v0pDpGgmxiRYjCU",
+  "tags": []
+}
