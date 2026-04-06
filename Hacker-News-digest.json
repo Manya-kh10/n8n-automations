@@ -1,0 +1,309 @@
+{
+  "name": "Hacker-News-digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 9
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        0,
+        0
+      ],
+      "id": "081dacd7-4b94-4c19-b7ca-b6c98b348294",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "jsCode": "const storyList = items.map((item, i) => \n  `${i+1}. ${item.json.title} (Score: ${item.json.score})`\n).join(' | ');\n\nconst prompt = `Here are today top Hacker News stories: ${storyList}. For each story write one sentence explaining what it is about. Return ONLY a JSON array like this: [{\"index\": 1, \"summary\": \"one sentence here\"}]. No other text outside the array.`;\n\nreturn [{ \n  json: { \n    prompt: prompt,\n    stories: items.map(i => i.json)\n  } \n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1120,
+        0
+      ],
+      "id": "4cab0419-7196-44ca-bfb3-2004df5f5716",
+      "name": "Prompt to give to groq"
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.map(item => ({\n  json: {\n    title: item.json.title,\n    url: item.json.url,\n    score: item.json.score\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        896,
+        0
+      ],
+      "id": "33cc2f87-8b19-4b53-8b54-1f60e22bb726",
+      "name": "Cleaning the data"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.groq.com/openai/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer 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"
+            },
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({\"model\": \"llama-3.3-70b-versatile\", \"messages\": [{\"role\": \"user\", \"content\": $json.prompt}]}) }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1568,
+        0
+      ],
+      "id": "d063d32d-b155-4a5e-b5f9-0e5d5e30940c",
+      "name": "Groq"
+    },
+    {
+      "parameters": {
+        "jsCode": "const raw = items[0].json.choices[0].message.content;\nconst summaries = JSON.parse(raw.replace(/```json|```/g, '').trim());\nconst stories = $('Prompt to give to groq').first().json.stories;\n\nreturn stories.map((story, i) => ({\n  json: {\n    title: story.title,\n    url: story.url || null,\n    score: story.score,\n    summary: summaries[i]?.summary || ''\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1792,
+        0
+      ],
+      "id": "79dc9db5-e94f-44ee-8a1d-44329828cb0c",
+      "name": "Merging the summery with the story"
+    },
+    {
+      "parameters": {
+        "resource": "databasePage",
+        "databaseId": {
+          "__rl": true,
+          "value": "338171ed-191d-801e-a17f-eb47c51563a4",
+          "mode": "list",
+          "cachedResultName": "338171ed-191d-801e-a17f-eb47c51563a4",
+          "cachedResultUrl": "https://www.notion.so/338171ed191d801ea17feb47c51563a4"
+        },
+        "propertiesUi": {
+          "propertyValues": [
+            {
+              "key": "Name|title",
+              "title": "={{ $json.title }}"
+            },
+            {
+              "key": "URL|url",
+              "urlValue": "={{ $json.url }}"
+            },
+            {
+              "key": "Summery|rich_text",
+              "textContent": "={{ $json.summary }}"
+            },
+            {
+              "key": "Score|number",
+              "numberValue": "={{ $json.score }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.notion",
+      "typeVersion": 2.2,
+      "position": [
+        2016,
+        0
+      ],
+      "id": "1997289e-65a9-4c04-b512-55f65b6c2bd4",
+      "name": "Create a database page",
+      "credentials": {
+        "notionApi": {
+          "id": "ipymjVfjb8Fa0TA8",
+          "name": "Notion account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return items.slice(0, 10).map(item => ({ json: { id: item.json } }));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        448,
+        0
+      ],
+      "id": "c8d299a0-96dc-4820-b771-e5510463dbeb",
+      "name": "Limittng to top 10 news"
+    },
+    {
+      "parameters": {
+        "url": "https://hacker-news.firebaseio.com/v0/topstories.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        224,
+        0
+      ],
+      "id": "260a14e3-68de-49b2-93f1-3fa42705c423",
+      "name": "Fetching news"
+    },
+    {
+      "parameters": {
+        "url": "=https://hacker-news.firebaseio.com/v0/item/{{ $json.id }}.json",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        672,
+        0
+      ],
+      "id": "623c52fc-dc93-4ffb-9aff-8f345e28f53d",
+      "name": "Fetching story Details"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  json: {\n    prompt: items[0].json.prompt.replace(/\\n/g, ' '),\n    stories: items[0].json.stories\n  }\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1344,
+        0
+      ],
+      "id": "29623c72-fe99-4ea1-9ff6-7a462a7588d8",
+      "name": "Better formatting"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Fetching news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prompt to give to groq": {
+      "main": [
+        [
+          {
+            "node": "Better formatting",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cleaning the data": {
+      "main": [
+        [
+          {
+            "node": "Prompt to give to groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq": {
+      "main": [
+        [
+          {
+            "node": "Merging the summery with the story",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merging the summery with the story": {
+      "main": [
+        [
+          {
+            "node": "Create a database page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limittng to top 10 news": {
+      "main": [
+        [
+          {
+            "node": "Fetching story Details",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetching news": {
+      "main": [
+        [
+          {
+            "node": "Limittng to top 10 news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetching story Details": {
+      "main": [
+        [
+          {
+            "node": "Cleaning the data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Better formatting": {
+      "main": [
+        [
+          {
+            "node": "Groq",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "ce6aa281-f424-456a-8d5a-def9e252bc03",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "9dbfe5c379610d5025fe48248fae053814c2ac62f89fef3e85208338b5ce2af9"
+  },
+  "id": "Zm3tpRldGCFAeA2D",
+  "tags": []
+}
